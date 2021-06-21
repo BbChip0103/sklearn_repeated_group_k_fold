@@ -2,7 +2,7 @@ import sklearn
 from sklearn.utils.validation import check_array, check_random_state, _deprecate_positional_args
 from sklearn.model_selection._split import _BaseKFold, _RepeatedSplits
 
-class CustomGroupKFold(_BaseKFold):
+class GroupKFold(_BaseKFold):
     """K-fold iterator variant with non-overlapping groups.
     The same group will not appear in two different folds (the number of
     distinct groups has to be at least equal to the number of folds).
@@ -15,32 +15,43 @@ class CustomGroupKFold(_BaseKFold):
         Number of folds. Must be at least 2.
         .. versionchanged:: 0.22
             ``n_splits`` default value changed from 3 to 5.
+    shuffle : bool, default=False
+        Whether to shuffle the data before splitting into batches.
+        Note that the samples within each split will not be shuffled.
+    random_state : int, RandomState instance or None, default=None
+        When `shuffle` is True, `random_state` affects the ordering of the
+        indices, which controls the randomness of each fold. Otherwise, this
+        parameter has no effect.
+        Pass an int for reproducible output across multiple function calls.
+        See :term:`Glossary <random_state>`.     
+
     Examples
     --------
     >>> import numpy as np
     >>> from sklearn.model_selection import GroupKFold
     >>> X = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
-    >>> y = np.array([1, 2, 3, 4])
-    >>> groups = np.array([0, 0, 2, 2])
-    >>> group_kfold = GroupKFold(n_splits=2)
+    >>> y = np.array([0, 0, 2, 2])
+    >>> groups = np.array([0, 1, 2, 3])
+    >>> group_kfold = GroupKFold(n_splits=2, shuffle=True, random_state=12345)
     >>> group_kfold.get_n_splits(X, y, groups)
     2
     >>> print(group_kfold)
-    GroupKFold(n_splits=2)
+    GroupKFold(n_splits=2, random_state=12345, shuffle=True)
     >>> for train_index, test_index in group_kfold.split(X, y, groups):
-    ...     print("TRAIN:", train_index, "TEST:", test_index)
-    ...     X_train, X_test = X[train_index], X[test_index]
-    ...     y_train, y_test = y[train_index], y[test_index]
-    ...     print(X_train, X_test, y_train, y_test)
+    ...    print("TRAIN:", train_index, "TEST:", test_index)
+    ...    X_train, X_test = X[train_index], X[test_index]
+    ...    y_train, y_test = y[train_index], y[test_index]
+    ...    print(X_train, X_test, y_train, y_test)
     ...
     TRAIN: [0 1] TEST: [2 3]
     [[1 2]
      [3 4]] [[5 6]
-     [7 8]] [1 2] [3 4]
+     [7 8]] [0 0] [2 2]
     TRAIN: [2 3] TEST: [0 1]
     [[5 6]
      [7 8]] [[1 2]
-     [3 4]] [3 4] [1 2]
+     [3 4]] [2 2] [0 0]
+
     See Also
     --------
     LeaveOneGroupOut : For splitting the data according to explicit
@@ -119,9 +130,9 @@ class CustomGroupKFold(_BaseKFold):
     
 
 class RepeatedGroupKFold(_RepeatedSplits):
-    """Repeated K-Fold cross validator.
-    Repeats K-Fold n times with different randomization in each repetition.
-    Read more in the :ref:`User Guide <repeated_k_fold>`.
+    """Repeated Group K-Fold cross validator.
+    Repeats Group K-Fold n times with different randomization in each repetition.
+    Read more in the :ref:`User Guide <repeated_group_k_fold>`.
     Parameters
     ----------
     n_splits : int, default=5
@@ -132,27 +143,31 @@ class RepeatedGroupKFold(_RepeatedSplits):
         Controls the randomness of each repeated cross-validation instance.
         Pass an int for reproducible output across multiple function calls.
         See :term:`Glossary <random_state>`.
+
     Examples
     --------
     >>> import numpy as np
-    >>> from sklearn.model_selection import RepeatedKFold
-    >>> X = np.array([[1, 2], [3, 4], [1, 2], [3, 4]])
-    >>> y = np.array([0, 0, 1, 1])
-    >>> rkf = RepeatedKFold(n_splits=2, n_repeats=2, random_state=2652124)
-    >>> for train_index, test_index in rkf.split(X):
+    >>> from sklearn.model_selection import RepeatedGroupKFold
+    >>> X = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
+    >>> y = np.array([0, 0, 2, 2])
+    >>> groups = np.array([0, 1, 2, 3])
+    >>> rkf = RepeatedGroupKFold(n_splits=2, n_repeats=2, random_state=2652124)
+    >>> for train_index, test_index in rkf.split(X, y, groups):
     ...     print("TRAIN:", train_index, "TEST:", test_index)
     ...     X_train, X_test = X[train_index], X[test_index]
     ...     y_train, y_test = y[train_index], y[test_index]
-    ...
-    TRAIN: [0 1] TEST: [2 3]
-    TRAIN: [2 3] TEST: [0 1]
+    ... 
     TRAIN: [1 2] TEST: [0 3]
     TRAIN: [0 3] TEST: [1 2]
+    TRAIN: [0 1] TEST: [2 3]
+    TRAIN: [2 3] TEST: [0 1]
+
     Notes
     -----
     Randomized CV splitters may return different results for each call of
     split. You can make the results identical by setting `random_state`
     to an integer.
+
     See Also
     --------
     RepeatedStratifiedKFold : Repeats Stratified K-Fold n times.
