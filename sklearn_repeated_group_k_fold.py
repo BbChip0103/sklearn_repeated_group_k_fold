@@ -175,7 +175,7 @@ class RepeatedGroupKFold(_RepeatedSplits):
     @_deprecate_positional_args
     def __init__(self, *, n_splits=5, n_repeats=10, random_state=None):
         super().__init__(
-            CustomGroupKFold, n_repeats=n_repeats,
+            GroupKFold, n_repeats=n_repeats,
             random_state=random_state, n_splits=n_splits)
         
     def split(self, X, y=None, groups=None):
